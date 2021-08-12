@@ -1,11 +1,11 @@
 import tkinter as tk
 from tkinter import filedialog
+
 import lxml.builder
 import lxml.etree as ET
 
 ele_namespace = {'b': 'http://schemas.datacontract.org/2004/07/ThreatModeling.KnowledgeBase'}
 any_namespace = {'a': 'http://schemas.microsoft.com/2003/10/Serialization/Arrays'}
-
 
 # get and element (or cell)
 def get_ele_prop(ele, prop_name):
@@ -21,65 +21,6 @@ def get_ele_prop(ele, prop_name):
                         value = val.text
                     return value
     return None
-
-
-def find_ele_type(tmt_type, ele, _name):
-    tmt_type = tmt_type['{http://www.w3.org/2001/XMLSchema-instance}type']
-    if tmt_type == "Connector" or tmt_type == "LineBoundary" or tmt_type == "BorderBoundary":
-        # flows have source and target, so choose different dict format
-        cell = dict.fromkeys(['type', 'size', 'smooth','source','target','vertices','id', 'z','hasOpenThreats','threats','attrs'])
-        cell['vertices'] = list()
-        if tmt_type == "Connector":
-            '''
-            cell['labels'] = list()
-            cell['labels'].append(dict.fromkeys(['position','attrs']))
-            cell['labels'][0]['position'] = 0.5
-            cell['labels'][0]['attrs'] = dict.fromkeys(['text'])
-            cell['labels'][0]['attrs']['text'] = dict.fromkeys(['text', 'font-weight','font-size'])
-            cell['labels'][0]['attrs']['text']['text'] = _name
-            cell['labels'][0]['attrs']['text']['font-weight'] = str(400)
-            cell['labels'][0]['attrs']['text']['font-size'] = 'small'
-            '''
-            ele_type = "tm.Flow"
-        elif tmt_type == "LineBoundary" or tmt_type == "BorderBoundary":
-            ele_type = "tm.Boundary"
-            '''
-            if tmt_type == "BorderBoundary":
-                cell = calc_boundary_box(cell, ele)
-            cell['attrs'] = dict()
-            '''
-        else:
-            return None
-        '''
-        #  get cords from MS TMT "lines" since boundaries and lines are different in MS TMT
-        if tmt_type == "LineBoundary":
-            get_boundary_points(cell, ele)
-        elif tmt_type == "Connector":
-            get_flow_points(cell, ele)
-        cell['smooth'] = True
-        cell['size'] = dict.fromkeys(['width','height'])
-        # defaults size for boundary or flows
-        cell['size']['width'] = int(10)
-        cell['size']['height'] = int(10)
-        '''
-    # must be a process, datastore, or EI
-    else:
-        cell = dict.fromkeys(['type','size','position','angle','id', 'z','hasOpenThreats','threats','attrs'])
-        cell['size'] = dict.fromkeys(['width','height'])
-        cell['position'] = dict.fromkeys(['x','y'])
-        cell['angle'] = int(0)
-        if tmt_type == "StencilRectangle":
-            ele_type = "tm.Actor"
-        elif tmt_type == "StencilEllipse":
-            ele_type = "tm.Process"
-        elif tmt_type == "StencilParallelLines":
-            ele_type = "tm.Store"
-        else:
-            return None
-        #cell = get_ele_size(cell, ele)
-    cell['threats'] = list()
-    cell['type'] = ele_type
-    return cell
 
 
 def get_element(ele):
@@ -165,10 +106,30 @@ def generate_dfd_xml(cells):
                                 to_type="process")
             dfd_xml = dfd_xml + dataflow
         elif cells["type"] == "line":
-             dataflow_asset(name=cell["name"])
-             dfd_xml = dfd_xml + dataflow_asset
+            dataflow_asset(name=cell["name"])
+            dfd_xml = dfd_xml + dataflow_asset
         else:
             dfd_xml = dfd_xml + '))'
+
+
+def line(line):
+    cell = get_flow_points(line)
+    stencil = dict.fromkeys(["name", "environment", "from_name", "from_type", "to_name", "to_type"])
+    stencil["name"] = get_element(line)
+    ' Value Environment is predefined because of missing information '
+    stencil["Environment"] = "Day"
+    stencil["from_name"] = cell["source"]
+    stencil["from_type"] = "TODO"
+    stencil["to_name"] = cell["target"]
+    stencil["to_type"] = "TODO"
+
+    print(stencil)
+
+
+def stencil(cells):
+    # Find type / Separate between Data Store, Entity, Trust Boundary, Process
+    pass
+
 
 def main():
     # Open Window to interact
@@ -188,24 +149,21 @@ def main():
     tree = ET.parse(file_path)
     root = tree.getroot()
 
-    '''Get all relevant parts for a Data Flow Diagram'''
+    '''1. Get all relevant parts for a Data Flow Diagram'''
     for child in root.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceList'):
         for ele in child.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceModel'):
             '''Get Stencils - Interactor, Process, Data Store, Trust Boundary'''
             for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Borders'):
                 for borders in ele2.findall(
                         '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-                    stencil = dict.fromkeys(["name", "environment", "from_name", "from_type", "to_name", "to_type"])
-                    stencil["to_name"] = get_element(borders)
-                    stencil["from_type"] = "entity"
-                    print(stencil)
+                    stencil(borders)
             '''Get Line - Generic Data Flow, HTTPS'''
             for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Lines'):
                 for lines in ele2.findall(
                         '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-                    # Flows. Unlike stencils, flows have a source and target guids
-                    line = get_element(lines)
-                    print(line)
+                    # Flows. Unlike stencils, flows have a source and target, so we need a helping function
+                    line(lines, cell)
+
 
 if __name__ == '__main__':
     main()
