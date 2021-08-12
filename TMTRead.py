@@ -140,7 +140,7 @@ def find_ele_type(tmt_type, ele, _name):
             ele_type = "tm.Boundary"
             if tmt_type == "BorderBoundary":
                 pass
-                #cell = calc_boundary_box(cell, ele)
+                # cell = calc_boundary_box(cell, ele)
             cell['attrs'] = dict()
         else:
             return None
@@ -342,17 +342,19 @@ def get_threats(_root, _cell, d_guid):
                         _cell['threats'].append(threat_dict)
     return _cell
 
+
 def guid2name(ele2, line):
     stencils = dict.fromkeys(["name", "guid"])
     for border in ele2.findall(
             '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-            stencils["name"] = border
-            stencils["guid"] = "guid"
+        stencils["name"] = border
+        stencils["guid"] = "guid"
     src_guid = line.findall(
         '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}SourceGuid')
 
     to_guid = line.findall(
         '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}TargetGuid')
+
 
 def main():
     # Open Window to interact
@@ -377,9 +379,12 @@ def main():
         for ele in child.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceModel'):
             '''Get Stencils - Interactor, Process, Data Store, Trust Boundary'''
             for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Borders'):
-                for border in ele2.findall(
+                for borders in ele2.findall(
                         '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-                    pass
+                    stencil = get_element(borders, z)
+                    z = z+1
+
+
             '''Get Lines - Generic Data Flow, HTTPS...'''
             for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Lines'):
                 for line in ele2.findall(
