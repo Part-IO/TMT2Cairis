@@ -2,8 +2,11 @@
 ## goal: parse TMT XML model into a dict that can be dumped into THreat Dragon's json format
 ## https://github.com/jgadsden/owasp-threat-dragon-models/tree/master/ThreatDragonModels
 
+import os
 import tkinter as tk
 import xml.etree.ElementTree as ET
+import CairisWrite
+import CairisWriteMap
 from tkinter import filedialog
 
 # namespace for prop elements
@@ -13,15 +16,21 @@ any_namespace = {'a': 'http://schemas.microsoft.com/2003/10/Serialization/Arrays
 
 # get guid src/target and vertices
 def get_flow_points(_cell, ele):
-    ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}SourceGuid')
     for src_guid in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}SourceGuid'):
         _src_guid = src_guid.text
     for tar_guid in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}TargetGuid'):
         _tar_guid = tar_guid.text
+    for vert_x in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}HandleX'):
+        _vert_x = int(vert_x.text)
+    for vert_y in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}HandleY'):
+        _vert_y = int(vert_y.text)
     _cell['source'] = dict.fromkeys(['id'])
     _cell['target'] = dict.fromkeys(['id'])
     _cell['source']['id'] = _src_guid
     _cell['target']['id'] = _tar_guid
+    _cell['vertices'].append(dict.fromkeys(['x', 'y']))
+    _cell['vertices'][0]['x'] = _vert_x
+    _cell['vertices'][0]['y'] = _vert_y
     return
 
 
@@ -52,7 +61,37 @@ def get_boundary_points(_cell, ele):
     return
 
 
-# Calculate Boundary Box is not necessary!
+# Threat Dragon does not support boundary boxes; only lines. Hack to make boxes import
+# creates a box from 5 points: source and target are same point and vertices make up the 3
+# other points of the rectangle
+def calc_boundary_box(cell, ele):
+    cell['vertices'].append(dict.fromkeys(['x', 'y']))
+    cell['vertices'].append(dict.fromkeys(['x', 'y']))
+    cell['vertices'].append(dict.fromkeys(['x', 'y']))
+    cell['source'] = dict.fromkeys(['x', 'y'])
+    cell['target'] = dict.fromkeys(['x', 'y'])
+    for y in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Height'):
+        _height = int(y.text)
+    for w in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Width'):
+        _width = int(w.text)
+    for x in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Left'):
+        _left = int(x.text)
+    for top in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Top'):
+        _top = int(top.text)
+    # source and target are same
+    cell['source']['x'] = _left
+    cell['source']['y'] = _top
+    cell['target']['x'] = _left
+    cell['target']['y'] = _top
+    # vertices make up the 3 other points of the rectangle
+    cell['vertices'][0]['x'] = _left + _width
+    cell['vertices'][0]['y'] = _top
+    cell['vertices'][1]['x'] = _left + _width
+    cell['vertices'][1]['y'] = _top + _height
+    cell['vertices'][2]['x'] = _left
+    cell['vertices'][2]['y'] = _top + _height
+    return cell
+
 
 def get_ele_size(cell, ele):
     for y in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Height'):
@@ -124,7 +163,9 @@ def find_ele_type(tmt_type, ele, _name):
     if tmt_type == "Connector" or tmt_type == "LineBoundary" or tmt_type == "BorderBoundary":
         # flows have source and target, so choose different dict format
         cell = dict.fromkeys(
-            ['type', 'size', 'smooth', 'source', 'target', 'vertices', 'id', 'z', 'hasOpenThreats', 'threats', 'attrs'])
+            ['name', 'type', 'size', 'smooth', 'source', 'target', 'vertices', 'id', 'z', 'hasOpenThreats', 'threats',
+             'attrs'])
+        cell['name'] = get_ele_prop(ele, 'Name')
         cell['vertices'] = list()
         if tmt_type == "Connector":
             cell['labels'] = list()
@@ -139,8 +180,7 @@ def find_ele_type(tmt_type, ele, _name):
         elif tmt_type == "LineBoundary" or tmt_type == "BorderBoundary":
             ele_type = "tm.Boundary"
             if tmt_type == "BorderBoundary":
-                pass
-                # cell = calc_boundary_box(cell, ele)
+                cell = calc_boundary_box(cell, ele)
             cell['attrs'] = dict()
         else:
             return None
@@ -157,7 +197,9 @@ def find_ele_type(tmt_type, ele, _name):
 
     # must be a process, datastore, or EI
     else:
-        cell = dict.fromkeys(['type', 'size', 'position', 'angle', 'id', 'z', 'hasOpenThreats', 'threats', 'attrs'])
+        cell = dict.fromkeys(
+            ['name', 'type', 'size', 'position', 'angle', 'id', 'z', 'hasOpenThreats', 'threats', 'attrs'])
+        cell['name'] = get_ele_prop(ele, 'Name')
         cell['size'] = dict.fromkeys(['width', 'height'])
         cell['position'] = dict.fromkeys(['x', 'y'])
         cell['angle'] = int(0)
@@ -175,15 +217,30 @@ def find_ele_type(tmt_type, ele, _name):
     return cell
 
 
-# get the name of an element
-def get_element(ele):
+# get and element (or cell)
+def get_element(ele, _z, _root, _m_guid):
+    # GUID also at this level
     for ele4 in ele.findall('{http://schemas.microsoft.com/2003/10/Serialization/Arrays}Value'):
         # find element type and get cell dict format
         name = get_ele_prop(ele4, 'Name')
-    return name
+        cell = find_ele_type(ele4.attrib, ele4, name)
+
+        if (get_ele_prop(ele4, 'Out Of Scope') == 'true'):
+            cell['outOfScope'] = True
+            cell['reasonOutOfScope'] = get_ele_prop(ele4, 'Reason For Out Of Scope')
+        else:
+            cell['outOfScope'] = False
+        # get GUID
+        for guid in ele4.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Guid'):
+            cell['id'] = guid.text
+        # add threats in for flows only
+        if _root and _m_guid:
+            cell = get_threats(_root, cell, _m_guid)
+        cell = set_cell_attribs(cell, name)
+        cell['z'] = _z
+    return cell
 
 
-'''Not relevant
 # given all the elements, calulate and save the max dimentions for x and y
 # used to determine screen size
 def cal_max_size(ele):
@@ -224,10 +281,12 @@ def get_diagram_size(_root):
             if y > max_y:
                 max_y = y
     dims = dict.fromkeys(['height', 'width'])
+    # some boundaries had trouble showing. Increase window by 10% to fit things
+    # TODO: this offset only happens on +x,-y; will need to also shift all elements position 13% on -x,+y
+    #       to make everything look really pretty
     dims['height'] = round(max_y * 1.13)
     dims['width'] = round(max_x * 1.13)
     return dims
-'''
 
 
 def get_notes(_root):
@@ -343,24 +402,10 @@ def get_threats(_root, _cell, d_guid):
     return _cell
 
 
-def guid2name(ele2, line):
-    stencils = dict.fromkeys(["name", "guid"])
-    for border in ele2.findall(
-            '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-        stencils["name"] = border
-        stencils["guid"] = "guid"
-    src_guid = line.findall(
-        '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}SourceGuid')
-
-    to_guid = line.findall(
-        '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}TargetGuid')
-
-
 def main():
-    # Open Window to interact
     root = tk.Tk()
     root.withdraw()
-    # Try to find the related TM7 Diagram
+
     try:
         file_path = filedialog.askopenfilename(parent=root, filetypes=[("MS threat model files", "*.tm7")])
     except FileNotFoundError:
@@ -369,49 +414,72 @@ def main():
     if not file_path:
         print('Must choose file path, quitting... ')
         quit()
-    # Close Window
+
     root.destroy()
     tree = ET.parse(file_path)
     root = tree.getroot()
 
-    '1. Get all relevant parts for a Data Flow Diagram'
-    for child in root.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceList'):
-        for ele in child.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceModel'):
-            '''Get Stencils - Interactor, Process, Data Store, Trust Boundary'''
-            for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Borders'):
-                for borders in ele2.findall(
-                        '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-                    stencil = get_element(borders, z)
-                    z = z+1
+    # get file name
+    base_name = os.path.splitext(file_path)[0]
+    file_path = base_name + '.json'
 
+    model = dict.fromkeys(['summary', 'detail'])
+    summary = get_sum(root)
+    model['summary'] = summary
+    model['detail'] = dict.fromkeys(['contributors', 'diagrams', 'reviewer'])
+    model['detail']['contributors'] = get_contribs(root)
+    model['detail']['reviewer'] = get_reviewers(root)
 
-            '''Get Lines - Generic Data Flow, HTTPS...'''
-            for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Lines'):
-                for line in ele2.findall(
-                        '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-                    # 1. Create Dict with all Names
-                    stencil = dict.fromkeys(["name", "environment", "from_name", "from_type", "to_name", "to_type"])
-                    # 2. Add corresponding name
-                    stencil["name"] = get_element(line)
-                    print(stencil)
-                    # 3. Because of missing information we define the environment for all lines with day
-                    stencil["environment"] = "Day"
-                    # 4. For lines we need a source and his Type with a Globally Unique Identifier
-                    src_guid = line.findall(
-                        '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}TargetGuid')
-                    print("hey")
-                    print(src_guid)
-                    src_name = src_guid.text
-                    print(src_name)
-                    stencil["from_name"] = src_name
-                    stencil["from_type"] = 'from guid to type'
-                    # 5. As well as the target and his type
-                    to_guid = line.findall(
-                        '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}TargetGuid')
-                    to_name = 'from guid to name'
-                    stencil["to_name"] = to_name
-                    stencil["to_type"] = 'from guid to type'
-                    # 6. All relevant information are now included, so we can pass it to the convertation
+    # find all note elements
+    notes = get_notes(root)
+
+    diagrams = list()
+    model['detail']['diagrams'] = diagrams
+    # add diagrams
+    with open(file_path, 'w') as outfile:
+        # get elements, borders, and notes
+        for child in root.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceList'):
+            diagram_num = 0
+            # indexing/numbering for TD elements
+            z = 1
+            # Add name here
+            model['detail']['diagrams'].append(
+                dict.fromkeys(['title', 'thumbnail', 'guid', 'id', 'diagramJson', 'size', 'diagramType']))
+            # default to STRIDE for MS TMT, although you can use different methodology/category in an MS template, it's not
+            # common. "STRIDE per element" is MS TMT's defualt methodology note that with the way MS TMT uses "STRIDE per element",
+            #  all MS threats origionate in FLOWS only (generated threats are sorted by "interactor") even if they deal with the target element
+            model['detail']['diagrams'][diagram_num]['diagramType'] = "STRIDE"
+            model['detail']['diagrams'][diagram_num]['thumbnail'] = "./public/content/images/thumbnail.stride.jpg"
+            # cells contain all stencils and flows
+            model['detail']['diagrams'][diagram_num]['diagramJson'] = dict.fromkeys(['cells'])
+            model['detail']['diagrams'][diagram_num]['diagramJson']['cells'] = list()
+            for ele in child.findall(
+                    '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceModel'):
+                model['detail']['diagrams'][diagram_num]['size'] = get_diagram_size(ele)
+                for d_guid in ele.findall(
+                        '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Guid'):
+                    m_guid = d_guid.text
+                    model['detail']['diagrams'][diagram_num]['guid'] = m_guid
+                for header in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Header'):
+                    model['detail']['diagrams'][diagram_num]['title'] = header.text
+                for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Borders'):
+                    # this level enumerates a model's elements
+                    for borders in ele2.findall(
+                            '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
+                        stencil = get_element(borders, z, None, None)
+                        model['detail']['diagrams'][diagram_num]['diagramJson']['cells'].append(stencil)
+                        z = z + 1
+                for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Lines'):
+                    # this level enumerates a model's elements
+                    for lines in ele2.findall(
+                            '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
+                        # Flows. Unlike stencils, flows have a source and target guids
+                        line = get_element(lines, z, root, m_guid)
+                        model['detail']['diagrams'][diagram_num]['diagramJson']['cells'].append(line)
+                        z = z + 1
+                model['detail']['diagrams'][diagram_num]['id'] = diagram_num
+                diagram_num = diagram_num + 1
+        CairisWriteMap.convert(model)
 
 
 if __name__ == '__main__':

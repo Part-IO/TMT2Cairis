@@ -1,30 +1,34 @@
 # TMT2Cairis
 ## Microsoft Threat Modeling Tool to Cairis Converter
+###Explanation
+
+### Usage/Installation
+
+## Data/Information avaiable from TMT2TD Tool
+|Type                |              |         Avaiable Information from MS TMT               |
+|--------------------|--------------|--------------------------------------------------------|
+| tm.Actor           |              | label (name), type = "entity", id, x, y, width, height |
+| tm.Store           |              |                                                        | 
+| tm.Flow            |              | x, y                                                   |
+| tm.Boundary        |              | name, id, x, y, width, height                          |
+| tm.Process         |              | label(name), type="", id, x, y, width, height          |  
 
 
 
-## General Structure of the XML (to_convert) 
-
-### Relevant for DFD (Data Flow Diagram)
-
-    
-|                    | XML-Reference     | Parent Folder|
-|--------------------|-------------------|--------------|
-|Data Store & Entity |assets             |riskanalysis  |
-|Data Flow           |dataflow           |dataflows     |
-|Trust Boundary      |trust_boundary     |dataflows     |
-|Process             |usecase            |goals         |
-
-### Relevant Information
-   - Data Store &rarr 
-        - description, significance, security_property  is ignored
-        - asset_association (environment, head_name, head_nav, head_adornment, head_nry, head_role, tail_role, tail_nry,
-     tail_adornment, tail_nav, tail_name) is ignored as well
-   - Entity &rarr name, short_code, type, is_critical
-        - description, significance, security_property  is ignored
-   - Data Flow &#8594; name, environment, from_name, from_type, to_name, to_type (Detailinfos)
-   - Trust Boundary &#8594; description, trust_boundary_environment(trust_boundary_component (name, type))
-   - Process &#8594;
+### Necessary Information for Cairis-Tool Convertion
+|                    |Class              |Type          |              Necessary Information for Cairis          |
+|--------------------|-------------------|--------------|--------------------------------------------------------|
+|Entity (incl. Actor)|Assets             |entity        | label (name), type = "entity", id, x, y, width, height |
+|Entity - Data Store |Assets             |datastore     | label (name), type = "entity", id, x, y, width, height |
+|Data Flow           |Data Flows         |None (mxCell) | x, y                                                   |
+|Trust Boundary      |Trust Boundary     |trustboundary | name, id, x, y, width, height                          |
+|Process             |Usecase            |usecase       | label(name), type="", id, x, y, width, height          |  
+   
+   
+   
+### Probleme
+Prozesse oder Entities mit dem selben Namen können Probleme für das spätere skizzieren werden
 
 
+Reihenfolge der 
 
