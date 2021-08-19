@@ -1,3 +1,4 @@
+# Copied from https://gist.github.com/reimund/5435343/
 def dict2xml(d, root_node=None):
     wrap = False if None == root_node or isinstance(d, list) else True
     root = 'objects' if None == root_node else root_node

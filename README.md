@@ -4,6 +4,7 @@
 
 ### Usage/Installation
 
+
 ## Data/Information avaiable from TMT2TD Tool
 |Type                |              |         Avaiable Information from MS TMT               |
 |--------------------|--------------|--------------------------------------------------------|
@@ -26,9 +27,9 @@
    
    
    
-### Probleme
-Prozesse oder Entities mit dem selben Namen können Probleme für das spätere skizzieren werden
-
+### Possible Problems
+1. TMT2Cairis can not handle Files with multiple Environments yet
+ 
 
 Reihenfolge der 
 

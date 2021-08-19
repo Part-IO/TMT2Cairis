@@ -6,7 +6,7 @@ import os
 import tkinter as tk
 import xml.etree.ElementTree as ET
 import CairisWrite
-import CairisWriteMap
+
 from tkinter import filedialog
 
 # namespace for prop elements
@@ -479,7 +479,7 @@ def main():
                         z = z + 1
                 model['detail']['diagrams'][diagram_num]['id'] = diagram_num
                 diagram_num = diagram_num + 1
-        CairisWriteMap.convert(model)
+        CairisWrite.convert(model)
 
 
 if __name__ == '__main__':

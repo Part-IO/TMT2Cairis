@@ -3,127 +3,131 @@ from dict2xml import dict2xml
 
 # Convert the data from the Threat Dragon Map to a Cairis Map
 def convert(model):
+    xml = []
     sub_model = model["detail"]["diagrams"][0]["diagramJson"]["cells"]
+    mxfile = dict.fromkeys(["mxCell"])
+    mxfile["mxCell"] = dict.fromkeys(["id"])
+    mxfile["mxCell"]["id"] = "0"
+    xml.append(mxfile)
+    mxfile = dict.fromkeys(["mxCell"])
+    mxfile["mxCell"] = dict.fromkeys(["id", "parent"])
+    mxfile["mxCell"]["id"] = "1"
+    mxfile["mxCell"]["parent"] = "0"
+    xml.append(mxfile)
     # Create dict over dict to later iterate over the types (type not available in all elements)
-    collection = dict.fromkeys(["type", "element"])
     for cell in sub_model:
+        mxfile = dict.fromkeys(["object"])
+        mxfile["object"] = dict.fromkeys("mxCell")
+        mxfile["object"]["mxCell"] = dict.fromkeys("mxGeometry")
         typ = cell["type"]
         # Because Actor and Datastore are both Assets(Entities) in Cairis we put them together
         if typ == "tm.Actor" or typ == "tm.Store":
-            entity = dict.fromkeys(["label", "type", "id", "x", "y", "width", "height"])
-            entity["label"] = cell["name"]
-            entity["id"] = cell["id"]
-            # X any Y value are stored in an own dict position
-            position = cell["position"]
-            entity["x"] = position["x"]
-            entity["y"] = position["y"]
-            # Width and Height are stored in an own dict size
-            size = cell["size"]
-            entity["height"] = size["height"]
-            entity["width"] = size["width"]
+            object = dict.fromkeys(["label", "type", "id"])
+            object["label"] = cell["name"]
+            object["id"] = cell["id"]
             # Because we handle two types we have to seperate
             if typ == "tm.Actor":
-                entity["type"] = "entity"
-                collection["type"] = "entity"
+                object["type"] = "entity"
             else:
-                entity["type"] = "datastore"
-                collection["type"] = "datastore"
-            collection["element"] = entity
-            print(collection)
+                object["type"] = "datastore"
+            # Now we can add the Object to the XML File
+            mxfile["object"] = object
+            mxCell = dict.fromkeys(["style", "vertex"])
+            # Both, Style and Vertex are predefined
+            mxCell["style"] = "html=1;dashed=0;whitespace=wrap;shape=partialRectangle;right=0;left=0;"
+            mxCell["vertex"] = "1"
+            mxfile["object"]["mxCell"] = mxCell
+            # Need of another sub Direcrory
+            mxGeometry = dict.fromkeys(["x", "y", "width", "height", "as"])
+            # X any Y value are stored in an own dict position
+            position = cell["position"]
+            mxGeometry["x"] = position["x"]
+            mxGeometry["y"] = position["y"]
+            # Width and Height are stored in an own dict size
+            size = cell["size"]
+            mxGeometry["width"] = size["width"]
+            mxGeometry["height"] = size["height"]
+            # As is once more predefined
+            mxGeometry["as"] = "geometry"
+            mxfile["object"]["mxCell"]["mxGeometry"] = mxGeometry
+            # Finished with the object we can append it on the xml-array
+            xml.append(mxfile)
 
         elif typ == "tm.Flow":
-            print(typ)
-            """# 1. Create corresponding dict. with relevant information
-            line = dict.fromkeys(["name", "environment", "from_name", "from_type", "to_name", "to_type"])
-            # 2. Add corresponding name
-            line["name"] = cell["name"]
-            # 3. Because of missing information we define the environment for all lines with day
-            line["environment"] = "Day"
-            # 4. For lines we need a source and his Type with a Globally Unique Identifier
-            for stencil in sub_model:
-                line_source = cell["source"]
-                if stencil["id"] == line_source["id"]:
-                    line["from_name"] = stencil["name"]
-                    line["from_type"] = type_convert(stencil["type"])  # Typ muss hier wohl noch angepasst werden!!!
-                    break
-                else:
-                    pass
-            # 5. As well as the target and his type
-            for stencil in sub_model:
-                line_target = cell["target"]
-                if stencil["id"] == line_target["id"]:
-                    line["to_name"] = stencil["name"]
-                    line["to_type"] = stencil["type"]  # Typ muss hier wohl noch angepasst werden!!!
-                    break
-                else:
-                    pass
-            # 6. All relevant information are now included, so we can pass it to the XML-Convert
-            xml_components(line)
-            """
+            object = dict.fromkeys(["label", "assets", "id"])
+            object["label"] = cell["name"]
+            object["assets"] = cell["name"]
+            object["id"] = cell["id"]
+            mxfile["object"] = object
+            mxCell = dict.fromkeys(["parent", "source", "target", "edge"])
+            mxCell["parent"] = "1"
+            source = cell["source"]
+            mxCell["source"] = source["id"]
+            target = cell["target"]
+            mxCell["target"] = target["id"]
+            mxCell["edge"] = "1"
+            mxfile["object"]["mxCell"] = mxCell
+            xml.append(mxfile)
 
         elif typ == "tm.Boundary":
-            print(typ)
-            """
-            boundary = dict.fromkeys(["name", "id", "x", "y", "width", "height"])
-            boundary["name"] = cell["name"]
-            boundary["id"] = cell["id"]
-            # TODO
-
-            collection["type"] = "trustboundary"
-            collection["element"] = boundary
-            """
+            object = dict.fromkeys(["label", "name", "type", "id"])
+            object["label"] = cell["name"]
+            object["name"] = cell["name"]
+            object["type"] = "trustboundary"
+            object["id"] = cell["id"]
+            mxfile["object"] = object
+            mxCell = dict.fromkeys(["parent", "vertex"])
+            mxCell["parent"] = "1"
+            mxCell["vertex"] = "1"
+            mxfile["object"]["mxCell"] = mxCell
+            mxGeometry = dict.fromkeys(["x", "y", "width", "height"])
+            source = cell["source"]
+            mxGeometry["x"] = source["x"]
+            mxGeometry["y"] = source["y"]
+            vertices = cell["vertices"]
+            # Falls die Boundary ein Rechteck ist
+            if len(vertices) == 3:
+                max = vertices[1]
+                mxGeometry["width"] = (max["x"] - source["x"])
+                mxGeometry["height"] = (max["y"] - source["y"])
+            else:
+                max = vertices[0]
+                mxGeometry["width"] = 1
+                mxGeometry["height"] = 1
+            mxfile["object"]["mxCell"]["mxGeometry"] = mxGeometry
+            xml.append(mxfile)
 
         elif typ == "tm.Process":
-            print(typ)
-            """
-            process = dict.fromkeys(["name", "author", "code"])
-            process["name"] = cell["name"]
+            object = dict.fromkeys(["label", "type", "id"])
+            object["label"] = cell["name"]
             # Because of missing information of the author - predefined TMT2Cairis
-            process["author"] = "TMT2Cairis"
+            object["type"] = "process"
             # Because of missing information of the short Code - predefined as PCS (Process)
-            process["code"] = "PCS"
-            """
-
-        elif typ == "summary":
-            print(typ)
+            object["id"] = cell["id"]
+            mxfile["object"] = object
+            mxCell = dict.fromkeys(["style", "vertex", "parent"])
+            mxCell["style"] = "rounded=1;whiteSpace=wrap;html=1;"
+            mxCell["vertex"] = "1"
+            mxCell["parent"] = "1"
+            mxfile["object"]["mxCell"] = mxCell
+            mxGeometry = dict.fromkeys(["x", "y", "height", "width"])
+            position = cell["position"]
+            mxGeometry["x"] = position["x"]
+            mxGeometry["y"] = position["y"]
+            size = cell["size"]
+            mxGeometry["height"] = size["height"]
+            mxGeometry["width"] = size["width"]
+            mxfile["object"]["mxCell"]["mxGeometry"] = mxGeometry
+            xml.append(mxfile)
         else:
             print("Error")
-    print("collection:")
-    print(collection)
-    createXML(collection)
+    createXML(xml)
 
 
 # Import Data Flow dict and convert to data flow xml syntax
-def createXML(collection):
-    print(dict2xml(collection, "mxfile"))
-    """   
-    root = lxml.builder.ElementMaker()
-    model = root.cairis_model
-    dataflow_xml = "model("
+def createXML(xml):
+    root = dict2xml(xml, "TODO")
+    print(root)
 
-    riskanalysis = root.riskanalysis
-
-    for cell in cells:
-        if cell["type"] ==:
-            goals = root.goals
-        usecase = root.usecase
-        process_xml = model(goals(
-            usecase(name=cell["name"],
-                    author=cell["author"],
-                    code=cell["code"])))
-        dataflow_xml = dataflow_xml + lxml.etree.tostring(process_xml)
-        break
-        else: pass
-    
-    dataflows = root.dataflows
-    
-    dataflow = root.dataflow
-    dataflow_xml = model(dataflows(
-        dataflow(name=cell["name"],
-                 environment=cell["environment"],
-                 from_name=cell["from_name"],
-                 from_type=cell["from_type"],
-                 to_name=cell["to_name"],
-                 to_type=cell["to_type"])))
-    dataflow_xml = dataflow_xml + lxml.etree.tostring(dataflow_xml)
-    """
+def main(base_name):
+    file_path = base_name + '.xml'
