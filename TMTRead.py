@@ -5,9 +5,9 @@
 import os
 import tkinter as tk
 import xml.etree.ElementTree as ET
-import CairisWrite
-
 from tkinter import filedialog
+
+import CairisWrite
 
 # namespace for prop elements
 ele_namespace = {'b': 'http://schemas.datacontract.org/2004/07/ThreatModeling.KnowledgeBase'}
@@ -436,50 +436,50 @@ def main():
     diagrams = list()
     model['detail']['diagrams'] = diagrams
     # add diagrams
-    with open(file_path, 'w') as outfile:
-        # get elements, borders, and notes
-        for child in root.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceList'):
-            diagram_num = 0
-            # indexing/numbering for TD elements
-            z = 1
-            # Add name here
-            model['detail']['diagrams'].append(
-                dict.fromkeys(['title', 'thumbnail', 'guid', 'id', 'diagramJson', 'size', 'diagramType']))
-            # default to STRIDE for MS TMT, although you can use different methodology/category in an MS template, it's not
-            # common. "STRIDE per element" is MS TMT's defualt methodology note that with the way MS TMT uses "STRIDE per element",
-            #  all MS threats origionate in FLOWS only (generated threats are sorted by "interactor") even if they deal with the target element
-            model['detail']['diagrams'][diagram_num]['diagramType'] = "STRIDE"
-            model['detail']['diagrams'][diagram_num]['thumbnail'] = "./public/content/images/thumbnail.stride.jpg"
-            # cells contain all stencils and flows
-            model['detail']['diagrams'][diagram_num]['diagramJson'] = dict.fromkeys(['cells'])
-            model['detail']['diagrams'][diagram_num]['diagramJson']['cells'] = list()
-            for ele in child.findall(
-                    '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceModel'):
-                model['detail']['diagrams'][diagram_num]['size'] = get_diagram_size(ele)
-                for d_guid in ele.findall(
-                        '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Guid'):
-                    m_guid = d_guid.text
-                    model['detail']['diagrams'][diagram_num]['guid'] = m_guid
-                for header in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Header'):
-                    model['detail']['diagrams'][diagram_num]['title'] = header.text
-                for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Borders'):
-                    # this level enumerates a model's elements
-                    for borders in ele2.findall(
-                            '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-                        stencil = get_element(borders, z, None, None)
-                        model['detail']['diagrams'][diagram_num]['diagramJson']['cells'].append(stencil)
-                        z = z + 1
-                for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Lines'):
-                    # this level enumerates a model's elements
-                    for lines in ele2.findall(
-                            '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
-                        # Flows. Unlike stencils, flows have a source and target guids
-                        line = get_element(lines, z, root, m_guid)
-                        model['detail']['diagrams'][diagram_num]['diagramJson']['cells'].append(line)
-                        z = z + 1
-                model['detail']['diagrams'][diagram_num]['id'] = diagram_num
-                diagram_num = diagram_num + 1
-        CairisWrite.convert(model)
+    # with open(file_path, 'w') as outfile:
+    # get elements, borders, and notes
+    for child in root.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceList'):
+        diagram_num = 0
+        # indexing/numbering for TD elements
+        z = 1
+        # Add name here
+        model['detail']['diagrams'].append(
+            dict.fromkeys(['title', 'thumbnail', 'guid', 'id', 'diagramJson', 'size', 'diagramType']))
+        # default to STRIDE for MS TMT, although you can use different methodology/category in an MS template, it's not
+        # common. "STRIDE per element" is MS TMT's defualt methodology note that with the way MS TMT uses "STRIDE per element",
+        #  all MS threats origionate in FLOWS only (generated threats are sorted by "interactor") even if they deal with the target element
+        model['detail']['diagrams'][diagram_num]['diagramType'] = "STRIDE"
+        model['detail']['diagrams'][diagram_num]['thumbnail'] = "./public/content/images/thumbnail.stride.jpg"
+        # cells contain all stencils and flows
+        model['detail']['diagrams'][diagram_num]['diagramJson'] = dict.fromkeys(['cells'])
+        model['detail']['diagrams'][diagram_num]['diagramJson']['cells'] = list()
+        for ele in child.findall(
+                '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}DrawingSurfaceModel'):
+            model['detail']['diagrams'][diagram_num]['size'] = get_diagram_size(ele)
+            for d_guid in ele.findall(
+                    '{http://schemas.datacontract.org/2004/07/ThreatModeling.Model.Abstracts}Guid'):
+                m_guid = d_guid.text
+                model['detail']['diagrams'][diagram_num]['guid'] = m_guid
+            for header in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Header'):
+                model['detail']['diagrams'][diagram_num]['title'] = header.text
+            for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Borders'):
+                # this level enumerates a model's elements
+                for borders in ele2.findall(
+                        '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
+                    stencil = get_element(borders, z, None, None)
+                    model['detail']['diagrams'][diagram_num]['diagramJson']['cells'].append(stencil)
+                    z = z + 1
+            for ele2 in ele.findall('{http://schemas.datacontract.org/2004/07/ThreatModeling.Model}Lines'):
+                # this level enumerates a model's elements
+                for lines in ele2.findall(
+                        '{http://schemas.microsoft.com/2003/10/Serialization/Arrays}KeyValueOfguidanyType'):
+                    # Flows. Unlike stencils, flows have a source and target guids
+                    line = get_element(lines, z, root, m_guid)
+                    model['detail']['diagrams'][diagram_num]['diagramJson']['cells'].append(line)
+                    z = z + 1
+            model['detail']['diagrams'][diagram_num]['id'] = diagram_num
+            diagram_num = diagram_num + 1
+    CairisWrite.convert(model, base_name)
 
 
 if __name__ == '__main__':

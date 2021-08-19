@@ -2,7 +2,7 @@ from dict2xml import dict2xml
 
 
 # Convert the data from the Threat Dragon Map to a Cairis Map
-def convert(model):
+def convert(model, base_name):
     xml = []
     sub_model = model["detail"]["diagrams"][0]["diagramJson"]["cells"]
     mxfile = dict.fromkeys(["mxCell"])
@@ -121,13 +121,21 @@ def convert(model):
             xml.append(mxfile)
         else:
             print("Error")
-    createXML(xml)
+    write(xml, base_name)
 
 
 # Import Data Flow dict and convert to data flow xml syntax
-def createXML(xml):
-    root = dict2xml(xml, "TODO")
-    print(root)
+def createXML(xml_array):
+    for xml in xml_array:
+        print(dict2xml(xml))
+    return
 
-def main(base_name):
+
+def write(xml_array, base_name):
     file_path = base_name + '.xml'
+    with open(file_path, 'w') as xml:
+        xml.write('<?xml version="1.0" encoding="UTF-8"?>')
+        xml.write('<mxfile ><diagram ><mxGraphModel ><root >')
+        for cell in xml_array:
+            xml.write((dict2xml(cell)))
+        xml.write('</root></mxGraphModel></diagram></mxfile>')
