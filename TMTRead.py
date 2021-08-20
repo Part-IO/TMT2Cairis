@@ -479,5 +479,4 @@ def main():
                     z = z + 1
             model['detail']['diagrams'][diagram_num]['id'] = diagram_num
             diagram_num = diagram_num + 1
-    print(model)
     CairisWrite.convert(model, base_name)
