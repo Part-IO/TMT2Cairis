@@ -6,7 +6,7 @@ the "diagrams.net" import (See Usage 9.)
 
 ## Usage
 1. Download the TMT2Cairis Project (zip, "git clone" ...)
-2. Navigate to the directory where you have downloaded the tool (Windows - CMD or UBuntu Shell)
+2. Navigate to the directory where you have downloaded the tool (Windows - CMD or Ubuntu Shell)
 3. Start the TMT2Cairis.py file with python. (Python3 is required)
             
     ```console
@@ -29,29 +29,27 @@ the "diagrams.net" import (See Usage 9.)
 - Works best with Python 3.8+
 - OS with GUI Windows/Ubuntu/Linux Mint/MAC OS (No Arch yet)
 
-### Data/Information avaiable from TMT2TD Tool
+### Data/Information available & relevant from TMT2TD Tool
+These Information might be relevant for a ongoing development, so it's just presented here...
 
-|Type                |              |         Avaiable Information from MS TMT               |
-|--------------------|--------------|--------------------------------------------------------|
-| tm.Actor           |              | label (name), type = "entity", id, x, y, width, height |
-| tm.Store           |              |                                                        | 
-| tm.Flow            |              | x, y                                                   |
-| tm.Boundary        |              | name, id, x, y, width, height                          |
-| tm.Process         |              | label(name), type="", id, x, y, width, height          |  
+|Type                |         Available Information from MS TMT                    |
+|--------------------|--------------------------------------------------------------|
+| tm.Actor           | name, type, size, position, id, hasOpenThreats & more        |
+| tm.Store           | name, type, size, position, id, hasOpenThreats & more        | 
+| tm.Flow            | name, size, target, source, vertices, id, threats, attr      |
+| tm.Boundary        | name, type, size, source, vertices, id, hasOpenThreats, attr |
+| tm.Process         | name, type, size, position, attr, hasOpenThreats             |  
 
+### Necessary Information for Cairis-Tool
 
+|                    |Class              |Type          |              Necessary Information for Cairis         |
+|--------------------|-------------------|--------------|-------------------------------------------------------|
+|Entity (incl. Actor)|Assets             |entity        | label (name), type, id, x, y, width, height           |
+|Entity - Data Store |Assets             |datastore     | label (name), type, id, x, y, width, height           |
+|Data Flow           |Data Flows         |None          | label, asset, id, source, target                      |
+|Trust Boundary      |Trust Boundary     |trustboundary | label, name, type, id, , x, y, width, height          |
+|Process             |Usecase            |usecase       | label(name), type, id, x, y, width, height            |  
 
-### Necessary Information for Cairis-Tool Convertion
-|                    |Class              |Type          |              Necessary Information for Cairis          |
-|--------------------|-------------------|--------------|--------------------------------------------------------|
-|Entity (incl. Actor)|Assets             |entity        | label (name), type = "entity", id, x, y, width, height |
-|Entity - Data Store |Assets             |datastore     | label (name), type = "entity", id, x, y, width, height |
-|Data Flow           |Data Flows         |None (mxCell) | x, y                                                   |
-|Trust Boundary      |Trust Boundary     |trustboundary | name, id, x, y, width, height                          |
-|Process             |Usecase            |usecase       | label(name), type="", id, x, y, width, height          |  
-   
-   
-   
 ### Limitations and Problems
 1. Data Flow Names are ignored because of in Cairis all data flows inside objects are predefined as "undefined flows"
 2. TMT2Cairis can not handle Files with multiple Environments yet! Please create an own file for each environment first. 
