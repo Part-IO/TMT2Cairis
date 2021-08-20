@@ -480,7 +480,3 @@ def main():
             model['detail']['diagrams'][diagram_num]['id'] = diagram_num
             diagram_num = diagram_num + 1
     CairisWrite.convert(model, base_name)
-
-
-if __name__ == '__main__':
-    main()
