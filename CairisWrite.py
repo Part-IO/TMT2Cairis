@@ -2,20 +2,24 @@ from dict2xml import dict2xml
 
 
 # Convert the data from the Threat Dragon Map to a Cairis Map
-def convert(model):
-    xml = []
+def convert(model, base_name):
+    prefix = []  # For the two Attributes in the beginning
+    xml = []  # Trust Boundaries have to be the first Attribute in XML
+    trust_boundary = []  # All other Attributes
     sub_model = model["detail"]["diagrams"][0]["diagramJson"]["cells"]
     mxfile = dict.fromkeys(["mxCell"])
     mxfile["mxCell"] = dict.fromkeys(["id"])
     mxfile["mxCell"]["id"] = "0"
-    xml.append(mxfile)
+    prefix.append(mxfile)
     mxfile = dict.fromkeys(["mxCell"])
     mxfile["mxCell"] = dict.fromkeys(["id", "parent"])
     mxfile["mxCell"]["id"] = "1"
     mxfile["mxCell"]["parent"] = "0"
-    xml.append(mxfile)
+    prefix.append(mxfile)
     # Create dict over dict to later iterate over the types (type not available in all elements)
+    value = 0
     for cell in sub_model:
+        value = value + 1
         mxfile = dict.fromkeys(["object"])
         mxfile["object"] = dict.fromkeys("mxCell")
         mxfile["object"]["mxCell"] = dict.fromkeys("mxGeometry")
@@ -95,11 +99,19 @@ def convert(model):
                 mxGeometry["width"] = 1
                 mxGeometry["height"] = 1
             mxfile["object"]["mxCell"]["mxGeometry"] = mxGeometry
-            xml.append(mxfile)
+            trust_boundary.append(mxfile)
 
         elif typ == "tm.Process":
             object = dict.fromkeys(["label", "type", "id"])
-            object["label"] = cell["name"]
+            # Check for Process Attributes with same name
+            for attr in xml:
+                if attr["object"]["label"] == cell["name"]:
+                    name = (cell["name"] + str(value))
+                    object["label"] = name
+                    break
+                else:
+                    pass
+                object["label"] = cell["name"]
             # Because of missing information of the author - predefined TMT2Cairis
             object["type"] = "process"
             # Because of missing information of the short Code - predefined as PCS (Process)
@@ -121,13 +133,18 @@ def convert(model):
             xml.append(mxfile)
         else:
             print("Error")
-    createXML(xml)
+    write(prefix, xml, trust_boundary, base_name)
 
 
-# Import Data Flow dict and convert to data flow xml syntax
-def createXML(xml):
-    root = dict2xml(xml, "TODO")
-    print(root)
-
-def main(base_name):
+def write(prefix, xml_array, trust_boundary, base_name):
     file_path = base_name + '.xml'
+    with open(file_path, 'w') as xml:
+        xml.write('<?xml version="1.0" encoding="UTF-8"?>')
+        xml.write('<mxfile ><diagram ><mxGraphModel ><root >')
+        for cell in prefix:
+            xml.write((dict2xml(cell)))
+        for cell in trust_boundary:
+            xml.write((dict2xml(cell)))
+        for cell in xml_array:
+            xml.write((dict2xml(cell)))
+        xml.write('</root></mxGraphModel></diagram></mxfile>')

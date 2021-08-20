@@ -2,8 +2,10 @@
 ## Microsoft Threat Modeling Tool to Cairis Converter
 ###Explanation
 
-### Usage/Installation
-
+### Usage
+1. Download the TMT2Cairis Project (zip, "git clone" ...)
+2. Navigate to the directory where you have downloaded the tool
+3. 
 
 ## Data/Information avaiable from TMT2TD Tool
 |Type                |              |         Avaiable Information from MS TMT               |
@@ -30,6 +32,4 @@
 ### Possible Problems
 1. TMT2Cairis can not handle Files with multiple Environments yet
 Add 
-
-Reihenfolge der 
 
