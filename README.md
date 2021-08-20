@@ -1,5 +1,5 @@
 # TMT2Cairis
-##Summary
+## Summary
 The "Microsoft Threat Modeling Tool to Cairis" (TMT2Cairis) converter is able to generate an XML file optimized for 
 Cairis from a TM7 file for the automated creation of a data flow diagram. For later import in Cairis, please use 
 the "diagrams.net" import (See Usage 9.)
@@ -52,9 +52,11 @@ the "diagrams.net" import (See Usage 9.)
    
    
    
-### Limitations
-1. TMT2Cairis can not handle Files with multiple Environments yet! Please create an own file for each environment first. 
+### Limitations and Problems
+1. Data Flow Names are ignored because of in Cairis all data flows inside objects are predefined as "undefined flows"
+2. TMT2Cairis can not handle Files with multiple Environments yet! Please create an own file for each environment first. 
 You can later create and directly import the models in the environment in Cairis (See Usage 9.)
-
-
+3. In the MS TMT Tool you can create Trust Boundaries as lines. In Cairis a trust boundary at least has to have one 
+Process. Data Stores and Entities are also not allowed to be inside a trust boundary
+4. Becuase of Cairis Syntax it's not allowed to have a direct data flow between two entities! 
 
