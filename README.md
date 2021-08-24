@@ -59,3 +59,6 @@ You can later create and directly import the models in the environment in Cairis
 Process. Data Stores and Entities are also not allowed to be inside a trust boundary
 4. Becuase of Cairis Syntax it's not allowed to have a direct data flow between two entities! 
 
+### References
+Almost complety used the TMT2TD Python Script from https://github.com/OWASP/threat-dragon/tree/main/utils/TMT2TD,
+For testing used the Open Threat Modeling Templates from https://github.com/matthiasrohr/OTMT
